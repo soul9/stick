@@ -1,0 +1,13 @@
+{
+"networks": {
+    "irc.freenode.net": {
+        "nick": "nsfw",
+        "realname": "nsfw",
+        "channels": ["#soul9", "#sabayon-hu"]
+    }
+},
+"plugins": [
+],
+"actions":[
+]
+}
