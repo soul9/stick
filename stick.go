@@ -18,31 +18,44 @@ func parseconf (conffile string) map[string]interface{} {
     d := json.NewDecoder(f)
     c := make(map[string]interface{})
     err = d.Decode(&c);
+    
     if  err != nil {
         fmt.Println("An error occurred while parsing the config file: ", err.String())
     }
-    fmt.Printf("%#V\n", c["networks"])
-    for key, val := range c["networks"].(map[string]interface{}) {
-        fmt.Printf("%s :\n", key)
-        for key, val := range val.(map[string]interface{}) {
-            switch t := val.(type) {
-                case nil:
-                    fmt.Printf("%s : nil\n", key)
-                case string:
-                    fmt.Printf("%s : %s\n", key, val)
-                default:
-                    if v, ok := val.(*reflect.ArrayValue); ok == true {
-                        fmt.Printf("%s: %V", key, v)
-/*                        for _, elm := range v.Elem {
-                            fmt.Printf("%s, ", elm)
-                        }*/
-                        fmt.Printf("\n")
-                    } else {
-                        fmt.Printf("Don't know %V\n", val)
+    fmt.Printf("%#V\n", c)
+    for key, val := range c {
+        fmt.Printf("%s, %V\n", key, val)
+        if v, ok := c[key].(map[string]interface{}); ok == true {
+            for key, val := range v {
+                fmt.Printf("%s :\n", key)
+                for key, val := range val.(map[string]interface{}) {
+                    fmt.Printf("  ")
+                    switch t := val.(type) {
+                        case nil:
+                            fmt.Printf("%s : nil\n", key)
+                        case string:
+                            fmt.Printf("%s : %s\n", key, val)
+                        case *reflect.StructType:
+                            fmt.Printf("struct\n")
+                        case *reflect.ArrayType:
+                            fmt.Printf("array\n")
+                        case *reflect.SliceType:
+                            fmt.Printf("slice\n")
+                        default:
+                            if v, ok := val.(*reflect.StructValue); ok == true {
+                                fmt.Printf("%s: %V", key, v)/*
+                                for _, elm := range v.Elem {
+                                    fmt.Printf("%s, ", elm)
+                                }*/
+                                fmt.Printf("\n")
+                            } else {
+                                fmt.Printf("Don't know %V\n", t)
+                            }
                     }
+                }
             }
+            fmt.Printf("\n")
         }
-        fmt.Printf("\n")
     }
     return c
 }
