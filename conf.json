@@ -1,13 +1,28 @@
 {
 "networks": {
-    "irc.freenode.net": {
-        "nick": "nsfw",
+    "irc.freenode.net:6667": {
+        "nick": "eirobot",
         "realname": "nsfw",
-        "channels": ["#soul9", "#sabayon-hu"]
+        "channels": [
+                                 { "name": "#pocotest",
+                                   "actions": {
+                                                     "1": {  "match": ".*☺.*",
+                                                        "action": "say",
+                                                        "parms": "o le joli smiley {$victim}"
+                                                     },
+                                                     "2": {  "match": ".*prout.*",
+                                                        "action": "action",
+                                                        "parms": "mwé prout dans ta geule va {$victim}"
+                                                     },
+                                                     "3": { "match": "^learn: ",
+                                                       "action": "learn",
+                                                       "parms": "{$message-match}"
+                                                     }
+                                                    }
+                                 }
+                             ]
     }
 },
-"plugins": [
-],
-"actions":[
-]
+"plugins": ["plug1", "plug2"],
+"actions":["act1", "act2"]
 }

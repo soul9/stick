@@ -1,92 +1,94 @@
-package main
+package stick
 
 import (
-	irc "github.com/thoj/Go-IRC-Client-Library"
+//	"github.com/thoj/Go-IRC-Client-Library"
+         irc "../Go-IRC-Client-Library/_obj/irc"
 	"fmt"
 	"os"
+	"regexp"
 	"json"
-	"flag"
-	"reflect"
 )
 
-func parseconf (conffile string) map[string]interface{} {
-    f, err := os.Open(conffile, os.O_RDONLY, 0)
-    if err != nil {
-        fmt.Println("An error occurred while opening the configuration file for reading: ", err.String())
-    }
-    defer f.Close()
-    d := json.NewDecoder(f)
-    c := make(map[string]interface{})
-    err = d.Decode(&c);
-    
-    if  err != nil {
-        fmt.Println("An error occurred while parsing the config file: ", err.String())
-    }
-    fmt.Printf("%#V\n", c)
-    for key, val := range c {
-        fmt.Printf("%s, %V\n", key, val)
-        if v, ok := c[key].(map[string]interface{}); ok == true {
-            for key, val := range v {
-                fmt.Printf("%s :\n", key)
-                for key, val := range val.(map[string]interface{}) {
-                    fmt.Printf("  ")
-                    switch t := val.(type) {
-                        case nil:
-                            fmt.Printf("%s : nil\n", key)
-                        case string:
-                            fmt.Printf("%s : %s\n", key, val)
-                        case *reflect.StructType:
-                            fmt.Printf("struct\n")
-                        case *reflect.ArrayType:
-                            fmt.Printf("array\n")
-                        case *reflect.SliceType:
-                            fmt.Printf("slice\n")
-                        default:
-                            if v, ok := val.(*reflect.StructValue); ok == true {
-                                fmt.Printf("%s: %V", key, v)/*
-                                for _, elm := range v.Elem {
-                                    fmt.Printf("%s, ", elm)
-                                }*/
-                                fmt.Printf("\n")
-                            } else {
-                                fmt.Printf("Don't know %V\n", t)
-                            }
-                    }
-                }
-            }
-            fmt.Printf("\n")
+
+
+func msgDispatcher (e *irc.IRCEvent, conn *irc.IRCConnection, info *NetConf) {
+    var chancfg ChanConf
+    for _, chancfg = range info.Channels {
+        if chancfg.Name == e.Arguments[0] {
+            break
         }
     }
-    return c
-}
-
-func dispatcher (e *irc.IRCEvent) {
-
-}
-
-func main() {
-    confpath := flag.String("c", "-c /path/to/conf/file.json", "Configuration file path")
-    flag.Parse()
-    _ = parseconf(*confpath)
-    os.Exit(0)
-    irccon := irc.IRC("nsfw", "nsfw")
-    err := irccon.Connect("chat.freenode.net:6667")
-    if err != nil {
-    	fmt.Printf("%s\n", err)
-    	fmt.Printf("%#v\n", irccon)
-    	os.Exit(1)
+    for _, action := range chancfg.Actions {
+        re, err := regexp.Compile(action.Match)
+        if err == nil && re.MatchString(e.Message) {
+            actionDispatcher(&action, e, conn, &chancfg)
+        }
     }
-    irccon.AddCallback("001", func(e *irc.IRCEvent) { irccon.Join("#sabayon-hu") })
-    irccon.AddCallback("JOIN", func(e *irc.IRCEvent) {
-                                       irccon.Privmsg(e.Message, "mi a fakk van?!")
-                                   })
-    irccon.AddCallback("PRIVMSG", func(e *irc.IRCEvent) {
-                                   if e.Message == "prout" {
-                                               for _, s := range e.Arguments {
-                                                   if s[0] == '#' {
-                                                       irccon.Privmsg(s, "francharb: PROUTZOR")
-                                                   }
-                                               }
-                                   }})
-    irccon.Loop();
+    fmt.Printf("%#v\n", e)
+}
+
+func ircAction(c string, parms string, conn *irc.IRCConnection) {
+    conn.Privmsg(c, "\001ACTION " + parms + "\001")
+}
+
+func learn(c string, p string, conn *irc.IRCConnection, acts map[string]ChanActConf){
+    act := new(ChanActConf)
+    err := json.Unmarshal([]byte(p), act)
+    if err != nil {
+        conn.Privmsg(c, "Sorry didn't understand: " + p)
+        conn.Privmsg(c, err.String())
+    }
+    conn.Privmsg(c, "Learning: " + p)
+    acts[string(len(acts))] = *act
+}
+
+func actionDispatcher(act *ChanActConf, e *irc.IRCEvent, conn *irc.IRCConnection, cfg *ChanConf) {
+    re, err := regexp.Compile(`{\$.+}`)
+    if err != nil {
+        return
+    }
+    tmpre, err := regexp.Compile(act.Match)
+    if err != nil {
+        return
+    }
+    parms := re.ReplaceAllStringFunc(act.Parms, func(s string) string{
+          switch s {
+            case "{$victim}":
+                s = e.Nick
+            case "{$message}":
+                s = e.Message
+            case "{$message-match}":
+                s = tmpre.ReplaceAllString(e.Message, "")
+          }
+          return s
+        })
+    switch act.Action {
+        case "say":
+            conn.Privmsg(e.Arguments[0], parms)
+        case "action":
+            ircAction(e.Arguments[0], parms, conn)
+        case "learn":
+            learn(e.Arguments[0], parms, conn, cfg.Actions)
+        default:
+            break
+    }
+}
+
+func Init(confpath *string) map[string]*irc.IRCConnection {
+    conf := parseconf(*confpath)
+    conns := make(map[string]*irc.IRCConnection)
+     for net, info := range conf.Networks {
+        conns[net] = irc.IRC(info.Nick, info.Realname)
+        if err :=conns[net].Connect(net); err != nil {
+            fmt.Printf("%s\n", err)
+            fmt.Printf("%#v\n", conns[net])
+            os.Exit(1)
+        }
+        for _, cn := range info.Channels {
+            conns[net].Join(cn.String())
+        }
+        conns[net].AddCallback("PRIVMSG", func(e *irc.IRCEvent){ msgDispatcher(e, conns[net], &info)})
+        conns[net].Loop();
+    }
+    return conns
 }

@@ -1,0 +1,5 @@
+ * rethink the api and interface
+ * markov (with db)
+ * match other things than the message itself (maybe just match on e.raw
+ * implement launching a script with parameters for "plugins"
+ * implement users and rights
