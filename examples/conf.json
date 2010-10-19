@@ -1,7 +1,7 @@
 {
 "networks": {
-    "irc.freenode.net:6667": {
-        "nick": "eirobot",
+    "chat.freenode.net:6667": {
+        "nick": "branche",
         "realname": "nsfw",
         "channels": [
                                  { "name": "#pocotest",
@@ -14,9 +14,17 @@
                                                           "action": "action",
                                                           "parms": "mwé prout dans ta geule va {$victim}"
                                                        },
-                                                       "3": { "match": "^learn: ",
+                                                       "3": { "match": "^{$mynick}: learn: ",
                                                          "action": "learn",
                                                          "parms": "{$message-match}"
+                                                       },
+                                                       "4": { "match": "^{$mynick}: quit",
+                                                         "action": "quit",
+                                                         "parms": ""
+                                                       },
+                                                       "5": { "match": "^{$mynick}: .*",
+                                                         "action": "say",
+                                                         "parms": "{$victim}: i'm just a bot, you're the human trying to talk to me."
                                                        }
                                                     }
                                  }

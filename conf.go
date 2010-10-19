@@ -26,29 +26,33 @@ type NetConf struct {
     Channels []ChanConf "channels"
 }
 
-type NetsConf map[string] NetConf
+type NetsConf map[string] *NetConf
 
 type PlugConf []string
 type ActConf []string
 
-type Conf struct {
+type StickConf struct {
     Networks NetsConf "networks"
     Plugins PlugConf "plugins"
     Actions ActConf "actions"
 }
 
 
-func parseconf (conffile string) Conf {
+func InitConf (conffile string) (*StickConf, os.Error) {
+    var c StickConf
+    return c.ReadConf(conffile)
+}
+
+func (c *StickConf) ReadConf(conffile string) (*StickConf, os.Error) {
     f, err := os.Open(conffile, os.O_RDONLY, 0)
     if err != nil {
         fmt.Println("An error occurred while opening the configuration file for reading: ", err.String())
     }
     defer f.Close()
     d := json.NewDecoder(f)
-    var c Conf
     err = d.Decode(&c);
     if  err != nil {
-        fmt.Println("An error occurred while parsing the config file: ", err.String())
+        return c, os.NewError("An error occurred while parsing the config file: " + err.String())
     }
-    return c
+    return c, nil
 }
