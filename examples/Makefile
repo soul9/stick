@@ -1,13 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-OBJS := $(patsubst %.go,%.$O,$(wildcard *.go))
-OUT := $(patsubst %.$O,%,$(OBJS))
+TARG=mark
+GOFILES=mark.go
 
-all: $(OBJS)
-
-%.$O: %.go
-	$(GC) $<
-	$(LD) -o $(patsubst %.$O,%,$@) $@
-
-clean:
-	rm -f *.$O $(OBJS) $(OUT)
+include $(GOROOT)/src/Make.cmd

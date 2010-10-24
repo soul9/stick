@@ -5,14 +5,12 @@
  * implement users and rights
  * implement commands, and adding commands
  * implement other events than regexp matching (i.e. inactivity on a channel etc..)
- * implement writing his own configuration when he learns
   * unlearn
  * parametrise messages, i.e.
      luser: stick: tell eiro he failed
-     stuck: eiro: you are made of fail
  * strings can't contain escapes: \(, only escaped escapes: \\( which sucks, we need to test also if match is a valid regexp
  * config change: actions is a map now, it should be a slice (or not?)
- * add events: MODE, JOIN, CTCP (action):
+ * add events: MODE, JOIN, CTCP (action), timeout (not implemented in go-irc-client-library: channel inactivity):
  No callback for: &irc.IRCEvent{Code:"JOIN", Message:"#soul9", Raw:":cane9!~johnny@unaffiliated/johnnybuoy JOIN :#soul9", Nick:"cane9", Host:"unaffiliated/johnnybuoy", Source:"cane9!~johnny@unaffiliated/johnnybuoy", User:"~johnny", Arguments:[]string{}}
 No callback for: &irc.IRCEvent{Code:"MODE", Message:"", Raw:":ChanServ!ChanServ@services. MODE #soul9 +o cane9", Nick:"ChanServ", Host:"services.", Source:"ChanServ!ChanServ@services.", User:"ChanServ", Arguments:[]string{"#soul9", "+o", "cane9"}}
 No callback for: &irc.IRCEvent{Code:"CTCP", Message:"ACTION \\\u263a/", Raw:":soul9!~none@unaffiliated/johnnybuoy PRIVMSG #soul9 :\x01ACTION \\\u263a/\x01", Nick:"soul9", Host:"unaffiliated/johnnybuoy", Source:"soul9!~none@unaffiliated/johnnybuoy", User:"~none", Arguments:[]string{"#soul9"}}

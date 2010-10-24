@@ -1,8 +1,8 @@
 package stick
 
 import (
-//	"github.com/thoj/Go-IRC-Client-Library"
-         irc "../Go-IRC-Client-Library/_obj/irc"
+	"github.com/thoj/Go-IRC-Client-Library"
+//         irc "../Go-IRC-Client-Library/_obj/irc"
 )
 
 func IrcAction(c string, parms string, conn *irc.IRCConnection) {

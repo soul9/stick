@@ -1,12 +1,11 @@
 package stick
 
 import (
-//	"github.com/thoj/Go-IRC-Client-Library"
-         irc "../Go-IRC-Client-Library/_obj/irc"
+	"github.com/thoj/Go-IRC-Client-Library"
+//         irc "../Go-IRC-Client-Library/_obj/irc"
 	"fmt"
 	"os"
 	"regexp"
-	"json"
 )
 
 type Stick struct {
@@ -19,11 +18,11 @@ func (st *Stick) msgDispatcher (e *irc.IRCEvent, net string) {
     //make a copy of the event so it doesn't get modified (when replying to (i.e.) learn messages, the action is auto-triggered)
     newevent := *e
     e = &newevent
-    if e.Nick == st.Conf.Networks[net].Nick {
+    if e.Nick == st.Conf.Conf.Networks[net].Nick {
         return
     }
     var chancfg ChanConf
-    for _, chancfg = range st.Conf.Networks[net].Channels {
+    for _, chancfg = range st.Conf.Conf.Networks[net].Channels {
         if chancfg.Name == e.Arguments[0] {
             break
         }
@@ -32,39 +31,15 @@ func (st *Stick) msgDispatcher (e *irc.IRCEvent, net string) {
         action = st.replaceVars(action, e, net)
         re, err := regexp.Compile(action.Match)
         if err == nil && re.MatchString(e.Message) {
-            st.actionDispatcher(&action, e, net, &chancfg)
+            st.actionDispatcher(&action, e, net)
         }
     }
     fmt.Printf("%#v\n", e)
 }
 
-func (st *Stick) Learn(p string, e *irc.IRCEvent, net string) {
-    act := new(ChanActConf)
-    err := json.Unmarshal([]byte(p), act)
-    conn := st.Conns[net]
-    if err != nil {
-        conn.Privmsg(e.Arguments[0], "Sorry, didn't understand: " + p)
-        conn.Privmsg(e.Arguments[0], "Error was: " + err.String())
-        return
-    }
-    //check if the match regexp is a valid regexp
-    _, err = regexp.Compile(st.replaceVars(*act, e, net).Match)
-    if err != nil {
-        conn.Privmsg(e.Arguments[0], "Sorry, this string is not a valid regexp: " + act.Match)
-        return
-    }
-    var i int
-    for i, _ =  range st.Conf.Networks[net].Channels {
-        if st.Conf.Networks[net].Channels[i].Name == e.Arguments[0] {
-            break
-        }
-    }
-    st.Conf.Networks[net].Channels[i].Actions[string(len(st.Conf.Networks[net].Channels[i].Actions))] = *act
-    conn.Privmsg(e.Arguments[0], "Learned: " + p)
-}
 
 func (st *Stick) replaceVars(c ChanActConf, e *irc.IRCEvent, net string) ChanActConf {
-    info := st.Conf.Networks[net]
+    info := st.Conf.Conf.Networks[net]
     re, _ := regexp.Compile(`{\$.+}`)
     tmpre, err := regexp.Compile(c.Match)
     if err != nil {
@@ -93,7 +68,7 @@ func (st *Stick) replaceVars(c ChanActConf, e *irc.IRCEvent, net string) ChanAct
     return c
 }
 
-func (st *Stick) actionDispatcher(act *ChanActConf, e *irc.IRCEvent, net string, cfg *ChanConf) {
+func (st *Stick) actionDispatcher(act *ChanActConf, e *irc.IRCEvent, net string) {
     switch act.Action {
         case "say":
             st.Conns[net].Privmsg(e.Arguments[0], act.Parms)
@@ -118,7 +93,7 @@ func Init(confpath *string) (*Stick, os.Error) {
         return st, os.NewError("Couldn't read configuration: " + err.String())
     }
     st.Conns = make(map[string]*irc.IRCConnection)
-    for net, info := range st.Conf.Networks {
+    for net, info := range st.Conf.Conf.Networks {
         st.Conns[net] = irc.IRC(info.Nick, info.Realname)
         if err :=st.Conns[net].Connect(net); err != nil {
             fmt.Printf("%s\n", err)
